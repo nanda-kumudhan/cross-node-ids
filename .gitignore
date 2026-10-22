@@ -1,0 +1,65 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+*.pem
+*.key
+
+# Local assistant config
+.agents/
+.codex/
+
+# Java / Spring Boot
+target/
+build/
+.gradle/
+*.class
+*.jar
+*.war
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/.mvn/wrapper/maven-wrapper.jar
+
+# Agent / eBPF build output
+*.o
+*.a
+*.so
+*.so.*
+*.skel.h
+agent/bin/
+agent/out/
+
+# React / Node
+node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local database and container data
+infra/docker/data/
+db/data/
+*.dump
+*.sql.gz
+
+# Logs and temporary files
+*.log
+*.pid
+tmp/
+temp/
+.cache/
+
+# Editors and OS files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

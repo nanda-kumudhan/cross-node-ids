@@ -1,0 +1,4 @@
+#!/bin/sh
+# Placeholder: replace with the generated Maven wrapper when creating the engine.
+echo 'The engine Maven wrapper has not been generated yet.' >&2
+exit 1

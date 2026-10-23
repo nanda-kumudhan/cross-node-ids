@@ -42,10 +42,21 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Local database and container data
+deploy/logs/*
+!deploy/logs/.gitkeep
 infra/docker/data/
 db/data/
 *.dump
 *.sql.gz
+
+# Terraform local state and credentials
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
 
 # Logs and temporary files
 *.log

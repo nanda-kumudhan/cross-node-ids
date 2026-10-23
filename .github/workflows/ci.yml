@@ -1,0 +1,14 @@
+# Placeholder. Tests, image builds and GHCR publishing will be added later.
+name: CI placeholder
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo 'CI is not configured yet.'

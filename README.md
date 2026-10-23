@@ -1,64 +1,68 @@
 # cross-node-ids
 
-Final year project for collecting eBPF telemetry from multiple nodes and seeing
-what's going on across them. The plan is to use Spring Boot and Kafka Streams
-for the backend, with Postgres keeping the data we want to query later.
+Side project for detecting activity across Linux hosts using eBPF events and
+Kafka Streams. Currently contains the local Docker setup: Kafka, Fluent Bit
+and Postgres. The agent and application services are still to be written.
 
-Just the folder setup for now. Nothing runs yet.
+Requires Docker with Compose, Make and Bash. No host Maven, Java or C packages
+are needed for this setup.
 
-## Rough data flow
-
-```text
-eBPF agents on each node
-        |
-        v
-collector -> Kafka -> stream processor -> Kafka -> API + persistence -> Postgres
-                                                       |
-                                                       v
-                                                 React dashboard
+```sh
+cp .env.example .env
+make up
+make smoke
 ```
 
-Each event should carry a node ID and timestamp so we can tell where it came
-from and line things up across nodes. Topic names and event formats still need
-sorting out.
+`make up` starts the containers and creates the `events.raw` topic. `make smoke`
+queries Postgres, appends a sample JSON line to `deploy/logs/events.jsonl` and
+checks that Fluent Bit sends it to Kafka. It also requires the `timeout` command.
 
-## Folders
+Fluent Bit tails `deploy/logs/*.jsonl`. To read the topic:
 
-```text
-agent/
-  bpf/                 eBPF programs running in the kernel
-  src/                 userspace code for reading and sending events
-  include/             headers shared by the agent code
-services/
-  collector/           Spring Boot service receiving events and sending to Kafka
-  stream-processor/    Kafka Streams app for processing events across nodes
-  api/                 Spring Boot service saving results and serving queries
-shared/
-  schemas/             event formats used between the agent and services
-db/
-  migrations/          versioned Postgres schema changes
-  seeds/               small bits of sample data for local development
-dashboard/             possible React dashboard
-infra/
-  docker/              local containers and Compose setup
-  k8s/                 Kubernetes manifests if we get that far
-scripts/               setup and development helpers
-docs/                  design notes and experiment results
-tests/
-  integration/         checks for the pipeline working together
+```sh
+make consume
 ```
 
-Service-specific tests can live inside each service once the apps are created.
-The `.gitkeep` files just make Git keep the empty folders; remove them as real
-files go in.
+Connections from the host use `localhost:29092` for Kafka and `localhost:5432`
+for Postgres. Containers use `kafka:9092` and `postgres:5432`. Ports and database
+credentials are set in `.env`; the defaults are for local development. Both
+published ports bind to localhost.
 
-## Starting point
+```sh
+make test   # validate Compose configuration; does not start containers
+make ps     # container status
+make logs   # follow logs
+make down   # stop containers; keep stored data
+```
 
-- Get one agent sending events through the collector into Kafka.
-- Add the stream processor and save its results in Postgres through the API service.
-- Try it with a few nodes and check the IDs and timestamps survive the trip.
-- Add a dashboard once there's something useful to show. Kubernetes can wait
-  until the local setup works.
+Kafka data, Postgres data and Fluent Bit's read offsets use Docker volumes.
+Input logs stay in `deploy/logs/` and are ignored by Git. Fluent Bit buffers up
+to 1 GB while Kafka is unavailable; older queued data can be lost at that limit.
+Changing database credentials after the first start does not update an existing
+Postgres volume.
 
-Keep local credentials in an ignored `.env` file. Commit a `.env.example` with
-dummy values when there's actual config to share.
+The Compose file is `deploy/compose.dev.yml`. Fluent Bit uses
+`deploy/fluent-bit.conf` and `deploy/parsers.conf`. Image versions are pinned
+in the Compose file.
+
+```text
+agent/             eBPF agent and gap checker
+engine/            Java 21 / Spring Boot / Kafka Streams
+rules/             detection rules and event fixtures
+attacks/           attack simulations and benign workloads
+tools/eventstorm/  event load generator
+ml/                Colab notebook and model card
+deploy/            Compose files, Fluent Bit config and Terraform
+ui/                React view
+docs/adr/          architecture decisions
+docs/diagrams/     architecture and sequence diagrams
+docs/results/      measurements, including kernel version and CPU
+```
+
+Files for the agent, engine, rules, CI and multi-node deployment are placeholders.
+`make deploy` and `make destroy` exit with a message until Terraform is configured.
+
+Configuration references: [Kafka image](https://hub.docker.com/r/apache/kafka),
+[Fluent Bit tail input](https://docs.fluentbit.io/manual/data-pipeline/inputs/tail),
+[Kafka output](https://docs.fluentbit.io/manual/data-pipeline/outputs/kafka),
+[Postgres image](https://hub.docker.com/_/postgres).

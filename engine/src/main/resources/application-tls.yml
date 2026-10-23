@@ -1,0 +1,10 @@
+spring:
+  kafka:
+    security:
+      protocol: SSL
+    properties:
+      ssl.truststore.type: PEM
+      ssl.truststore.location: /run/tls/ca.crt
+      ssl.keystore.type: PEM
+      ssl.keystore.location: /run/tls/client.pem
+      ssl.endpoint.identification.algorithm: https

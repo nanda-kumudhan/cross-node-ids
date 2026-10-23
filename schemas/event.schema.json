@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent event v1",
+  "type": "object",
+  "required": ["schema_version", "node", "boot_id", "agent_run_id", "seq", "timestamp", "type", "pid", "process_start_ns"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "node": {"type": "string", "minLength": 1},
+    "boot_id": {"type": "string", "minLength": 1},
+    "agent_run_id": {"type": "string", "minLength": 1},
+    "seq": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "type": {"enum": ["exec", "connect", "accept", "ssh_session_authenticated", "heartbeat"]},
+    "pid": {"type": "integer", "minimum": 0},
+    "process_start_ns": {"type": "integer", "minimum": 0},
+    "executable": {"type": "string"},
+    "synthetic": {"type": "boolean"},
+    "src_ip": {"type": "string"},
+    "src_port": {"type": "integer", "minimum": 0, "maximum": 65535},
+    "dst_ip": {"type": "string"},
+    "dst_port": {"type": "integer", "minimum": 0, "maximum": 65535},
+    "kernel_drops": {"type": "integer", "minimum": 0}
+  }
+}

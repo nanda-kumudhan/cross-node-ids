@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars (ignored); replace every example value.
+os_image             = "123456789" # Obtain the numeric Ubuntu 24.04 image ID in your region.
+ssh_key_fingerprints = ["YOUR_EXISTING_DO_SSH_KEY_FINGERPRINT"]
+admin_cidrs          = ["203.0.113.10/32"]
+repository_url       = "https://github.com/YOUR_ACCOUNT/cross-node-ids.git"
+revision             = "0000000000000000000000000000000000000000"
+engine_image         = "ghcr.io/YOUR_ACCOUNT/cross-node-ids-engine@sha256:REPLACE_WITH_DIGEST"
+ui_image             = "ghcr.io/YOUR_ACCOUNT/cross-node-ids-ui@sha256:REPLACE_WITH_DIGEST"
+sensor_count         = 2

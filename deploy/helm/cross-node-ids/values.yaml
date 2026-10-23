@@ -1,0 +1,30 @@
+engine:
+  image: ghcr.io/your-org/cross-node-ids-engine
+  tag: "0.1.0"
+  detectionEnabled: false
+ui:
+  image: ghcr.io/your-org/cross-node-ids-ui
+  tag: "0.1.0"
+kafka:
+  bootstrapServers: "" # Broker must be reachable from every Kubernetes worker.
+  securityProtocol: SSL
+  existingTlsSecret: "" # Secret keys: ca.crt and client.pem (PKCS#8 key + cert).
+postgres:
+  image: postgres:17.11-bookworm
+  database: ids
+  username: ids
+  existingSecret: "" # Secret key: password.
+  storage: 5Gi
+  storageClass: "" # Empty uses the cluster default StorageClass.
+service:
+  type: ClusterIP
+resources:
+  engine:
+    requests: {cpu: 250m, memory: 384Mi}
+    limits: {cpu: "1", memory: 768Mi}
+  ui:
+    requests: {cpu: 25m, memory: 32Mi}
+    limits: {cpu: 250m, memory: 128Mi}
+  postgres:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: "1", memory: 512Mi}

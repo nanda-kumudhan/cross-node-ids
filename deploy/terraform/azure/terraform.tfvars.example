@@ -1,0 +1,5 @@
+location           = "REPLACE_WITH_VERIFIED_REGION"
+kubernetes_version = "REPLACE_WITH_SUPPORTED_EXACT_VERSION"
+vm_size            = "REPLACE_WITH_VERIFIED_SIZE"
+registry_name      = "replacewithuniqueregistryname"
+github_repository  = "YOUR_ACCOUNT/cross-node-ids"

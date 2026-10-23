@@ -1,1 +1,10 @@
-# Placeholder: execution from /tmp/ or /dev/shm/.
+id: exec-from-tmp
+title: Execution from a temporary directory
+description: Suspicious executable location; ATT&CK context is heuristic, not proof of exploitation.
+kind: single
+severity: medium
+enabled: true
+attack: [T1059]
+spec:
+  event_type: exec
+  executable_prefixes: [/tmp/, /dev/shm/]

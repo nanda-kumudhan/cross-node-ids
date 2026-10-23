@@ -1,0 +1,87 @@
+{
+  "mode": "replay",
+  "generated_at": "2026-10-23T12:02:00Z",
+  "description": "Synthetic illustrative data. No measured results.",
+  "alerts": [
+    {
+      "id": "demo-001",
+      "rule_id": "exec-from-tmp",
+      "title": "Execution from /tmp/ on node-a",
+      "severity": "medium",
+      "timestamp": "2026-10-23T12:00:05Z",
+      "nodes": [
+        "node-a"
+      ],
+      "known_loss": false,
+      "description": "Synthetic executable path /tmp/demo. Arguments are redacted."
+    },
+    {
+      "id": "demo-002",
+      "rule_id": "ssh-onward-hop",
+      "title": "SSH session opens an onward connection",
+      "severity": "high",
+      "timestamp": "2026-10-23T12:00:14Z",
+      "nodes": [
+        "node-a"
+      ],
+      "known_loss": false,
+      "description": "Synthetic authenticated session followed by a connection to node-b:22."
+    },
+    {
+      "id": "demo-003",
+      "rule_id": "cross-node-chain",
+      "title": "Onward hop reaches node-b with known loss",
+      "severity": "critical",
+      "timestamp": "2026-10-23T12:00:22Z",
+      "nodes": [
+        "node-a",
+        "node-b"
+      ],
+      "known_loss": true,
+      "description": "Illustrative tuple match and suspicious destination execution. Node-b has an explicit loss annotation."
+    },
+    {
+      "id": "demo-004",
+      "rule_id": "cross-node-chain",
+      "title": "Attack path continues to node-c",
+      "severity": "critical",
+      "timestamp": "2026-10-23T12:00:45Z",
+      "nodes": [
+        "node-a",
+        "node-b",
+        "node-c"
+      ],
+      "known_loss": true,
+      "description": "Synthetic three-node path for dashboard demonstration; not an evaluated detection."
+    }
+  ],
+  "loss": [
+    {
+      "node": "node-a",
+      "boot_id": "demo-boot-a",
+      "timestamp": "2026-10-23T12:01:00Z",
+      "received": 1200,
+      "sequence_gaps": 0,
+      "kernel_drops": 0,
+      "agent_run_id": "demo-run-1"
+    },
+    {
+      "node": "node-b",
+      "boot_id": "demo-boot-b",
+      "timestamp": "2026-10-23T12:01:00Z",
+      "received": 900,
+      "sequence_gaps": 12,
+      "kernel_drops": 8,
+      "agent_run_id": "demo-run-1"
+    },
+    {
+      "node": "node-c",
+      "boot_id": "demo-boot-c",
+      "timestamp": "2026-10-23T12:01:00Z",
+      "received": 1100,
+      "sequence_gaps": 0,
+      "kernel_drops": 0,
+      "agent_run_id": "demo-run-1"
+    }
+  ]
+}

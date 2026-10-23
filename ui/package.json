@@ -1,0 +1,10 @@
+{
+  "name": "cross-node-ids-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {"node": ">=24.0.0"},
+  "scripts": {"dev": "vite --host 0.0.0.0", "build": "vite build", "preview": "vite preview --host 0.0.0.0", "test": "node --test --test-isolation=none src/dashboard.test.js"},
+  "dependencies": {"react": "19.3.1", "react-dom": "19.3.1"},
+  "devDependencies": {"vite": "8.3.5", "@vitejs/plugin-react": "6.1.2"}
+}

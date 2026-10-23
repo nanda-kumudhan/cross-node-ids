@@ -1,0 +1,54 @@
+{{- $name := include "ids.name" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: {{ $name }}-ui}
+  template:
+    metadata:
+      labels: {app: {{ $name }}-ui}
+      annotations:
+        checksum/config: {{ printf "%s-engine" $name | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 101, runAsGroup: 101}
+      containers:
+        - name: ui
+          image: "{{ .Values.ui.image }}:{{ .Values.ui.tag }}"
+          ports: [{name: http, containerPort: 8080}]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          readinessProbe: {httpGet: {path: /healthz, port: http}}
+          livenessProbe: {httpGet: {path: /healthz, port: http}}
+          resources: {{- toYaml .Values.resources.ui | nindent 12 }}
+          volumeMounts:
+            - {name: temporary, mountPath: /tmp}
+            - {name: config, mountPath: /etc/nginx/conf.d/default.conf, subPath: default.conf, readOnly: true}
+      volumes:
+        - {name: temporary, emptyDir: {}}
+        - {name: config, configMap: {name: {{ $name }}-ui}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-ui
+spec:
+  type: {{ .Values.service.type }}
+  selector: {app: {{ $name }}-ui}
+  ports: [{name: http, port: 8080, targetPort: http}]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}-ui
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      root /usr/share/nginx/html;
+      location / { try_files $uri $uri/ /index.html; }
+      location /api/ { proxy_pass http://{{ $name }}-engine:8080; }
+      location /healthz { access_log off; return 200 'ok'; }
+    }

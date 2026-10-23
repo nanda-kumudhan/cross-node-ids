@@ -1,0 +1,7 @@
+Dashboard: kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "ids.name" . }}-ui 8088:8080
+Open http://localhost:8088 and select Live API.
+
+Detection is disabled by default. Kafka topics events.raw, alerts and metrics.loss
+must already exist. Kafka must be reachable at its advertised listener from the
+cluster; certificate SANs must match. Do not expose a plaintext VM broker publicly.
+Postgres is a single instance with a retained PVC; this chart does not provide HA.

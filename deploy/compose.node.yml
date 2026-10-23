@@ -1,2 +1,36 @@
-# Placeholder: agent and Fluent Bit on each measurement node.
-services: {}
+name: cross-node-sensor
+services:
+  # Enable after building the C agent.
+  agent:
+    profiles: [agent]
+    image: ${AGENT_IMAGE:-ghcr.io/your-org/cross-node-ids-agent:unbuilt}
+    restart: unless-stopped
+    pid: host
+    network_mode: host
+    privileged: false
+    cap_drop: [ALL]
+    cap_add: [BPF, PERFMON]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    environment:
+      NODE_ID: ${NODE_ID:?Set NODE_ID}
+      ARGUMENT_POLICY: redact
+      OUTPUT_PATH: /var/log/agent/events.jsonl
+    volumes:
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+      - /sys/fs/bpf:/sys/fs/bpf
+      - ./deploy/logs:/var/log/agent
+    tmpfs: [/tmp]
+  fluent-bit:
+    image: fluent/fluent-bit:4.0.3
+    restart: unless-stopped
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:?Set TLS broker host:9094}
+    volumes:
+      - ./deploy/fluent-bit.tls.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./deploy/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - ./deploy/logs:/var/log/agent:ro
+      - ${TLS_DIR:-./deploy/tls}/${NODE_ID}:/run/tls:ro
+      - fluent-bit-state:/fluent-bit/state
+volumes:
+  fluent-bit-state:

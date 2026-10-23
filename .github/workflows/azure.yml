@@ -1,0 +1,59 @@
+name: Deploy to AKS with OIDC
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: azure-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    environment: azure
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/setup-kubectl@v4
+        with: {version: 'v1.34.1'}
+      - uses: azure/use-kubelogin@v1
+        with: {kubelogin-version: 'v0.2.12'}
+      - uses: azure/setup-helm@v4.3.1
+        with: {version: 'v3.19.0'}
+      - name: Build and publish application images
+        env:
+          ACR_NAME: ${{ vars.ACR_NAME }}
+          ACR_SERVER: ${{ vars.ACR_SERVER }}
+        run: |
+          set -euo pipefail
+          : "${ACR_NAME:?Set the ACR_NAME environment variable}"
+          : "${ACR_SERVER:?Set the ACR_SERVER environment variable}"
+          az acr login --name "$ACR_NAME"
+          docker build -t "$ACR_SERVER/engine:$GITHUB_SHA" engine
+          docker build -t "$ACR_SERVER/ui:$GITHUB_SHA" ui
+          docker push "$ACR_SERVER/engine:$GITHUB_SHA"
+          docker push "$ACR_SERVER/ui:$GITHUB_SHA"
+      - name: Deploy using pre-provisioned Kubernetes secrets
+        env:
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          CLUSTER: ${{ vars.AKS_CLUSTER_NAME }}
+          ACR_SERVER: ${{ vars.ACR_SERVER }}
+          KAFKA_BROKERS: ${{ vars.KAFKA_BOOTSTRAP_SERVERS }}
+        run: |
+          set -euo pipefail
+          : "${RESOURCE_GROUP:?Set AZURE_RESOURCE_GROUP}"
+          : "${CLUSTER:?Set AKS_CLUSTER_NAME}"
+          : "${KAFKA_BROKERS:?Set KAFKA_BOOTSTRAP_SERVERS}"
+          az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$CLUSTER" --overwrite-existing
+          kubelogin convert-kubeconfig -l azurecli
+          python tools/sync_helm_rules.py
+          helm upgrade --install crossnode deploy/helm/cross-node-ids --namespace ids --create-namespace \
+            --set-string engine.image="$ACR_SERVER/engine" --set-string engine.tag="$GITHUB_SHA" \
+            --set-string ui.image="$ACR_SERVER/ui" --set-string ui.tag="$GITHUB_SHA" \
+            --set-string kafka.bootstrapServers="$KAFKA_BROKERS" \
+            --set postgres.existingSecret=ids-postgres --set kafka.existingTlsSecret=ids-kafka-tls \
+            --atomic --wait --timeout 10m

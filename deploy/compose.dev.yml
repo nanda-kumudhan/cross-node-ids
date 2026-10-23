@@ -41,10 +41,10 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        /opt/kafka/bin/kafka-topics.sh \
-          --bootstrap-server kafka:9092 \
-          --create --if-not-exists --topic events.raw \
-          --partitions 1 --replication-factor 1
+        for topic in events.raw alerts metrics.loss; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+            --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1
+        done
 
   fluent-bit:
     image: fluent/fluent-bit:4.0.3
@@ -77,6 +77,36 @@ services:
       timeout: 5s
       retries: 12
       start_period: 10s
+
+  engine:
+    profiles: [app]
+    build: ./engine
+    image: cross-node-ids-engine:dev
+    restart: unless-stopped
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ids}
+      POSTGRES_USER: ${POSTGRES_USER:-ids}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ids-local-only}
+      IDS_DETECTION_ENABLED: "false"
+    ports:
+      - "127.0.0.1:${ENGINE_PORT:-8080}:8080"
+    volumes:
+      - ./rules:/app/rules:ro
+
+  ui:
+    profiles: [app]
+    build: ./ui
+    image: cross-node-ids-ui:dev
+    restart: unless-stopped
+    depends_on: [engine]
+    ports:
+      - "127.0.0.1:${UI_PORT:-8088}:8080"
 
 volumes:
   kafka-data:

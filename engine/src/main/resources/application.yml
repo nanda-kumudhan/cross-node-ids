@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: cross-node-ids
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/ids}
+    username: ${POSTGRES_USER:ids}
+    password: ${POSTGRES_PASSWORD:ids-local-only}
+    hikari:
+      maximum-pool-size: 5
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    security:
+      protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+    consumer:
+      group-id: ids-dashboard-v1
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        isolation.level: read_committed
+        max.poll.records: 100
+    listener:
+      ack-mode: record
+      missing-topics-fatal: true
+    streams:
+      application-id: ${STREAMS_APPLICATION_ID:ids-detection-v1}
+      state-dir: ${STREAMS_STATE_DIR:/tmp/ids-streams}
+      properties:
+        processing.guarantee: exactly_once_v2
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        num.stream.threads: 1
+        commit.interval.ms: 100
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+ids:
+  detection:
+    enabled: ${IDS_DETECTION_ENABLED:false}
+  ingestion:
+    enabled: ${IDS_INGESTION_ENABLED:true}
+  topics:
+    events: events.raw
+    alerts: alerts
+    loss: metrics.loss
+  rules-directory: ${RULES_DIRECTORY:/app/rules}
+  join-window: ${JOIN_WINDOW:60s}
+  join-grace: ${JOIN_GRACE:10s}

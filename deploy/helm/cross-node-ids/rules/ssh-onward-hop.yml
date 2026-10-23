@@ -1,0 +1,12 @@
+id: ssh-onward-hop
+title: Authenticated SSH session makes an onward SSH connection
+description: Requires an authenticated session signal and process ancestry; accept alone is not a login.
+kind: sequence
+severity: high
+enabled: true
+attack: [T1021.004]
+spec:
+  first: ssh_session_authenticated
+  then: ssh_connect
+  within_seconds: 60
+  identity: node_boot_session

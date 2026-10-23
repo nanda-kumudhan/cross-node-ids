@@ -1,0 +1,71 @@
+{{- $name := include "ids.name" . -}}
+{{- $password := required "postgres.existingSecret is required" .Values.postgres.existingSecret -}}
+{{- $brokers := required "kafka.bootstrapServers is required" .Values.kafka.bootstrapServers -}}
+{{- if and (ne .Values.kafka.securityProtocol "SSL") (ne .Values.kafka.securityProtocol "PLAINTEXT") -}}
+{{- fail "kafka.securityProtocol must be SSL or PLAINTEXT" -}}
+{{- end -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}-engine
+  labels:
+    {{- include "ids.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: {{ $name }}-engine}
+  template:
+    metadata:
+      labels: {app: {{ $name }}-engine}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001}
+      containers:
+        - name: engine
+          image: "{{ .Values.engine.image }}:{{ .Values.engine.tag }}"
+          ports: [{name: http, containerPort: 8080}]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          env:
+            - {name: KAFKA_BOOTSTRAP_SERVERS, value: {{ $brokers | quote }}}
+            - {name: KAFKA_SECURITY_PROTOCOL, value: {{ .Values.kafka.securityProtocol | quote }}}
+            - {name: DATABASE_URL, value: "jdbc:postgresql://{{ $name }}-postgres:5432/{{ .Values.postgres.database }}"}
+            - {name: POSTGRES_USER, value: {{ .Values.postgres.username | quote }}}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $password }}, key: password}}
+            - {name: IDS_DETECTION_ENABLED, value: {{ .Values.engine.detectionEnabled | quote }}}
+            {{- if eq .Values.kafka.securityProtocol "SSL" }}
+            - {name: SPRING_PROFILES_ACTIVE, value: tls}
+            {{- end }}
+          startupProbe:
+            httpGet: {path: /actuator/health/liveness, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /actuator/health/readiness, port: http}
+          livenessProbe:
+            httpGet: {path: /actuator/health/liveness, port: http}
+          resources: {{- toYaml .Values.resources.engine | nindent 12 }}
+          volumeMounts:
+            - {name: temporary, mountPath: /tmp}
+            - {name: rules, mountPath: /app/rules, readOnly: true}
+            {{- if eq .Values.kafka.securityProtocol "SSL" }}
+            - {name: kafka-tls, mountPath: /run/tls, readOnly: true}
+            {{- end }}
+      volumes:
+        - {name: temporary, emptyDir: {}}
+        - {name: rules, configMap: {name: {{ $name }}-rules}}
+        {{- if eq .Values.kafka.securityProtocol "SSL" }}
+        - name: kafka-tls
+          secret:
+            secretName: {{ required "kafka.existingTlsSecret is required for SSL" .Values.kafka.existingTlsSecret }}
+            defaultMode: 0440
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-engine
+spec:
+  selector: {app: {{ $name }}-engine}
+  ports: [{name: http, port: 8080, targetPort: http}]

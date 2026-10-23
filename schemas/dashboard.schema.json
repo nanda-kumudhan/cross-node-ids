@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["mode", "generated_at", "alerts", "loss"],
+  "properties": {
+    "mode": {"enum": ["live", "replay"]},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "alerts": {"type": "array", "items": {"$ref": "#/$defs/alert"}},
+    "loss": {"type": "array", "items": {"$ref": "#/$defs/loss"}}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "counter": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "alert": {
+      "type": "object",
+      "required": ["id", "rule_id", "title", "severity", "timestamp", "nodes"],
+      "properties": {
+        "id": {"$ref": "#/$defs/text"}, "rule_id": {"$ref": "#/$defs/text"}, "title": {"$ref": "#/$defs/text"},
+        "severity": {"enum": ["low", "medium", "high", "critical"]},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}},
+        "known_loss": {"type": "boolean"}, "description": {"type": "string"}
+      }
+    },
+    "loss": {
+      "type": "object",
+      "required": ["node", "boot_id", "agent_run_id", "timestamp", "received", "sequence_gaps", "kernel_drops"],
+      "properties": {
+        "node": {"$ref": "#/$defs/text"}, "boot_id": {"$ref": "#/$defs/text"}, "agent_run_id": {"$ref": "#/$defs/text"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "received": {"$ref": "#/$defs/counter"}, "sequence_gaps": {"$ref": "#/$defs/counter"}, "kernel_drops": {"$ref": "#/$defs/counter"}
+      }
+    }
+  }
+}

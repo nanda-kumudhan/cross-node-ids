@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+cd /opt/cross-node-ids
+private_ip=$(ip -4 -o addr show | awk '$4 ~ /^10\.42\./ {split($4, part, "/"); print part[1]; exit}')
+test -n "$private_ip"
+printf 'CORE_PRIVATE_IP=%s\n' "$private_ip" >> /opt/ids/.env
+openssl req -new -key /opt/ids/tls/core/server.key -subj /CN=kafka -out /opt/ids/tls/core/server.csr
+printf 'subjectAltName=IP:%s,DNS:kafka\nextendedKeyUsage=serverAuth\n' "$private_ip" > /opt/ids/tls/core/server.ext
+openssl x509 -req -in /opt/ids/tls/core/server.csr -CA /opt/ids/tls/core/ca.crt \
+  -CAkey /opt/ids/tls/core/ca.key -CAcreateserial -days 14 -sha256 \
+  -extfile /opt/ids/tls/core/server.ext -out /opt/ids/tls/core/server.crt
+openssl pkcs8 -topk8 -nocrypt -in /opt/ids/tls/core/server.key -out /opt/ids/tls/core/server.pk8
+cat /opt/ids/tls/core/server.pk8 /opt/ids/tls/core/server.crt > /opt/ids/tls/core/server.pem
+chmod 0444 /opt/ids/tls/core/server.pem
+# Keep signing keys outside the Kafka mount.
+install -d -m 0700 /opt/ids/ca
+mv /opt/ids/tls/core/ca.key /opt/ids/ca/ca.key
+mv /opt/ids/tls/core/server.key /opt/ids/ca/server.key
+mv /opt/ids/tls/core/server.pk8 /opt/ids/ca/server.pk8
+docker compose --env-file /opt/ids/.env --project-directory . -f deploy/compose.core.yml pull
+docker compose --env-file /opt/ids/.env --project-directory . -f deploy/compose.core.yml up -d

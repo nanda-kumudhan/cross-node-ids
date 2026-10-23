@@ -1,1 +1,13 @@
-# Placeholder: cross-node connection and process chain.
+id: cross-node-chain
+title: SSH onward hop followed by suspicious destination execution
+description: Match a successful connect and accept tuple, then execution in that destination session.
+kind: cross_node
+severity: critical
+enabled: true
+attack: [T1021.004]
+spec:
+  source_rule: ssh-onward-hop
+  within_seconds: 60
+  grace_seconds: 10
+  match: tcp_4tuple
+  destination_executable_prefixes: [/tmp/, /dev/shm/]

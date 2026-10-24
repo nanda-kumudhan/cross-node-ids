@@ -1,7 +1,7 @@
 engine:
   image: ghcr.io/your-org/cross-node-ids-engine
   tag: "0.1.0"
-  detectionEnabled: false
+  detectionEnabled: true
 ui:
   image: ghcr.io/your-org/cross-node-ids-ui
   tag: "0.1.0"

@@ -1,14 +1,15 @@
-# ADR 0001: Keep detection separate from the app setup
+# ADR 0001: Keep detection separate from app ingestion
 
-Status: accepted.
+Status: accepted; implementation updated.
 
-The app setup covers alert storage, the dashboard, tooling and deployment.
-The agent, gap detector, rules and correlation logic are still to do.
+The API, dashboard persistence and Kafka consumers can run independently of the
+agent and detector. `DetectionModule` supplies the topology; `CoreDetectionModule`
+now implements the two supported rule kinds. A bare app remains ingestion-only;
+Compose enables detection explicitly. Readiness checks Streams state when enabled.
 
-The Java service defaults to ingestion-only. DetectionModule is required before
-Streams starts. Synthetic replay is labelled; schema validation does not stand
-in for detection tests. Local Compose uses loopback plaintext; remote shipping
-uses mTLS. Kubernetes uses an explicitly reachable external Kafka broker.
+This separation permits fixture tests without kernel privileges and schema/API
+checks without a broker. It does not substitute for live eBPF, Kafka/DB integration
+or multi-VM measurements. Synthetic replay stays labelled. Local Kafka is
+plaintext on loopback/Docker networks; remote sensor shipping uses mTLS.
 
-This lets me test the app before the detector is ready. The MVP still needs
-real probes and correlation working end to end. Final measurements need separate VMs.
+ML, SSH session attribution and Kubernetes enrichment remain separate work.

@@ -43,7 +43,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: readinessState,db
+          include: readinessState,db,detection
 ids:
   detection:
     enabled: ${IDS_DETECTION_ENABLED:false}
@@ -54,5 +54,3 @@ ids:
     alerts: alerts
     loss: metrics.loss
   rules-directory: ${RULES_DIRECTORY:/app/rules}
-  join-window: ${JOIN_WINDOW:60s}
-  join-grace: ${JOIN_GRACE:10s}

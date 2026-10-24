@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Cross-node IDS rule definition (detector implementation pending)",
+  "title": "Cross-node IDS rule definition",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "title", "kind", "severity", "enabled", "attack", "description", "spec"],
@@ -8,20 +8,22 @@
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]+$"},
     "title": {"type": "string", "minLength": 1},
     "description": {"type": "string", "minLength": 1},
-    "kind": {"enum": ["single", "sequence", "cross_node"]},
+    "kind": {"enum": ["single", "connection", "sequence", "cross_node"]},
     "severity": {"enum": ["low", "medium", "high", "critical"]},
     "enabled": {"type": "boolean"},
-    "attack": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$"}},
+    "attack": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$"}},
     "spec": {"type": "object"}
   },
   "allOf": [
     {"if": {"properties": {"kind": {"const": "single"}}}, "then": {"properties": {"spec": {"$ref": "#/$defs/single"}}}},
+    {"if": {"properties": {"kind": {"const": "connection"}}}, "then": {"properties": {"spec": {"$ref": "#/$defs/connection"}}}},
     {"if": {"properties": {"kind": {"const": "sequence"}}}, "then": {"properties": {"spec": {"$ref": "#/$defs/sequence"}}}},
     {"if": {"properties": {"kind": {"const": "cross_node"}}}, "then": {"properties": {"spec": {"$ref": "#/$defs/crossNode"}}}}
   ],
   "$defs": {
     "paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^/.+/$"}},
     "single": {"type": "object", "additionalProperties": false, "required": ["event_type", "executable_prefixes"], "properties": {"event_type": {"const": "exec"}, "executable_prefixes": {"$ref": "#/$defs/paths"}}},
+    "connection": {"type": "object", "additionalProperties": false, "required": ["protocol", "address_family", "match", "within_seconds", "grace_seconds"], "properties": {"protocol": {"const": "tcp"}, "address_family": {"const": "ipv4"}, "match": {"const": "tcp_4tuple"}, "within_seconds": {"type": "integer", "minimum": 1, "maximum": 60}, "grace_seconds": {"type": "integer", "minimum": 0, "maximum": 600}}},
     "sequence": {"type": "object", "additionalProperties": false, "required": ["first", "then", "within_seconds", "identity"], "properties": {"first": {"const": "ssh_session_authenticated"}, "then": {"const": "ssh_connect"}, "within_seconds": {"type": "integer", "minimum": 1, "maximum": 3600}, "identity": {"const": "node_boot_session"}}},
     "crossNode": {"type": "object", "additionalProperties": false, "required": ["source_rule", "within_seconds", "grace_seconds", "match", "destination_executable_prefixes"], "properties": {"source_rule": {"type": "string", "minLength": 1}, "within_seconds": {"type": "integer", "minimum": 1, "maximum": 3600}, "grace_seconds": {"type": "integer", "minimum": 0, "maximum": 600}, "match": {"const": "tcp_4tuple"}, "destination_executable_prefixes": {"$ref": "#/$defs/paths"}}}
   }

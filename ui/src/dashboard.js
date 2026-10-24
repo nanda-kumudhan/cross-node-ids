@@ -18,6 +18,11 @@ export function validateSnapshot(data) {
         || !['received', 'sequence_gaps', 'kernel_drops'].every(key => Number.isSafeInteger(loss[key]) && loss[key] >= 0)) {
       throw new Error('Invalid loss counters in snapshot');
     }
+    if (!['capture_errors', 'revision', 'provisional_gaps', 'finalized_gaps', 'late_unreconciled', 'highest_seq']
+        .every(key => loss[key] === undefined || Number.isSafeInteger(loss[key]) && loss[key] >= 0)
+        || loss.closed !== undefined && typeof loss.closed !== 'boolean') {
+      throw new Error('Invalid extended loss snapshot');
+    }
   }
   if (new Set(data.loss.map(row => JSON.stringify([row.node, row.boot_id, row.agent_run_id]))).size !== data.loss.length) {
     throw new Error('Duplicate loss scopes');

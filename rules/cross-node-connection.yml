@@ -1,0 +1,13 @@
+id: cross-node-connection
+title: TCP connection observed on two nodes
+description: Correlate successful connect and accept evidence in a controlled IPv4 lab; not proof of authentication or an attack.
+kind: connection
+severity: low
+enabled: true
+attack: []
+spec:
+  protocol: tcp
+  address_family: ipv4
+  match: tcp_4tuple
+  within_seconds: 5
+  grace_seconds: 10

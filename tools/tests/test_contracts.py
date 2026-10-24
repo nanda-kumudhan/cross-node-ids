@@ -8,6 +8,15 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ContractTests(unittest.TestCase):
+    def test_fixture_events_and_network_requirements(self):
+        schema = json.loads((ROOT / "schemas/event.schema.json").read_text())
+        validator = Draft202012Validator(schema, format_checker=FormatChecker())
+        events = [json.loads(line) for line in (ROOT / "rules/fixtures/connection.jsonl").read_text().splitlines()]
+        for event in events:
+            validator.validate(event)
+        del events[0]["success"]
+        self.assertFalse(validator.is_valid(events[0]))
+
     def test_synthetic_replay_matches_public_contract(self):
         schema = json.loads((ROOT / "schemas/dashboard.schema.json").read_text())
         data = json.loads((ROOT / "ui/public/replay.json").read_text())

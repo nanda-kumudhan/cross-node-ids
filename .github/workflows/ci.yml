@@ -29,6 +29,8 @@ jobs:
         with: {version: 'v3.19.0'}
       - run: python -m pip install -r tools/requirements.txt -r ml/requirements.txt
       - run: make test-python
+      - run: sudo apt-get update && sudo apt-get install -y clang libbpf-dev pkg-config
+      - run: make test-agent
       - run: ./mvnw -B -ntp verify
         working-directory: engine
       - run: go test ./...
@@ -61,6 +63,7 @@ jobs:
           - {component: engine, context: engine}
           - {component: ui, context: ui}
           - {component: eventstorm, context: tools/eventstorm}
+          - {component: agent, context: agent}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3

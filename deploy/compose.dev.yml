@@ -93,7 +93,7 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ids}
       POSTGRES_USER: ${POSTGRES_USER:-ids}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ids-local-only}
-      IDS_DETECTION_ENABLED: "false"
+      IDS_DETECTION_ENABLED: ${IDS_DETECTION_ENABLED:-true}
     ports:
       - "127.0.0.1:${ENGINE_PORT:-8080}:8080"
     volumes:
@@ -107,6 +107,27 @@ services:
     depends_on: [engine]
     ports:
       - "127.0.0.1:${UI_PORT:-8088}:8080"
+
+  agent:
+    profiles: [agent]
+    build: ./agent
+    image: cross-node-ids-agent:dev
+    pid: host
+    network_mode: host
+    cap_drop: [ALL]
+    cap_add: [BPF, PERFMON]
+    ulimits:
+      memlock: {soft: 16777216, hard: 16777216}
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    environment:
+      NODE_ID: ${NODE_ID:-local-node}
+      OUTPUT_PATH: /var/log/agent/events.jsonl
+    volumes:
+      - /sys/kernel/btf:/sys/kernel/btf:ro
+      - /sys/kernel/tracing:/sys/kernel/tracing:ro
+      - ./deploy/logs:/var/log/agent
+    tmpfs: [/tmp]
 
 volumes:
   kafka-data:

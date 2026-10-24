@@ -1,6 +1,7 @@
 COMPOSE := docker compose --project-directory . -f deploy/compose.dev.yml
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 
-.PHONY: up app down test test-python test-engine test-ui test-go test-config test-helm test-infra integration smoke logs ps consume deploy plan destroy azure-plan azure-deploy azure-destroy
+.PHONY: up app down agent-build test-agent replay alerts test test-python test-engine test-ui test-go test-config test-helm test-infra integration smoke logs ps consume deploy plan destroy azure-plan azure-deploy azure-destroy
 
 up:
 	$(COMPOSE) up -d --wait --wait-timeout 180
@@ -9,9 +10,21 @@ app:
 	$(COMPOSE) --profile app up -d --build
 
 down:
-	$(COMPOSE) --profile app down
+	$(COMPOSE) --profile app --profile agent down
 
-test: test-python test-engine test-ui test-go test-config test-helm test-infra
+test: test-python test-agent test-engine test-ui test-go test-config test-helm test-infra
+
+agent-build:
+	$(MAKE) -C agent
+
+test-agent: agent-build
+	$(PYTHON) -m unittest discover -s agent/tests
+
+replay:
+	$(PYTHON) tools/replay.py rules/fixtures/connection.jsonl --fresh
+
+alerts:
+	$(COMPOSE) exec kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic alerts --from-beginning
 
 test-config:
 	$(COMPOSE) config --quiet
@@ -20,10 +33,10 @@ test-config:
 	NODE_ID=node-a KAFKA_BOOTSTRAP_SERVERS=10.42.0.10:9094 docker compose --project-directory . -f deploy/compose.node.yml --profile agent config --quiet
 
 test-python:
-	python3 tools/validate_rules.py
-	python3 tools/sync_helm_rules.py --check
-	python3 -m unittest discover -s tools/tests
-	python3 -m unittest discover -s ml/tests
+	$(PYTHON) tools/validate_rules.py
+	$(PYTHON) tools/sync_helm_rules.py --check
+	$(PYTHON) -m unittest discover -s tools/tests
+	$(PYTHON) -m unittest discover -s ml/tests
 
 test-engine:
 	cd engine && ./mvnw -B -ntp verify

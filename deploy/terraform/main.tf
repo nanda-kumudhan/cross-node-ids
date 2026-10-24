@@ -97,15 +97,16 @@ resource "digitalocean_droplet" "sensor" {
       { path = "/opt/ids/tls/${each.key}/client.key", permissions = "0400", content = tls_private_key.sensor[each.key].private_key_pem },
       { path = "/opt/ids/.env", permissions = "0600", content = join("\n", [
         "NODE_ID=${each.key}", "KAFKA_BOOTSTRAP_SERVERS=${digitalocean_droplet.core.ipv4_address_private}:9094",
-        "TLS_DIR=/opt/ids/tls", ""
+        "TLS_DIR=/opt/ids/tls", "AGENT_IMAGE=${var.agent_image}", ""
       ]) }
     ]
     runcmd = [
       "systemctl enable --now docker chrony",
       "git clone --no-checkout ${var.repository_url} /opt/cross-node-ids",
       "git -C /opt/cross-node-ids checkout --detach ${var.revision}",
-      "cd /opt/cross-node-ids && docker compose --env-file /opt/ids/.env --project-directory . -f deploy/compose.node.yml pull",
-      "cd /opt/cross-node-ids && docker compose --env-file /opt/ids/.env --project-directory . -f deploy/compose.node.yml up -d"
+      "mountpoint -q /sys/kernel/tracing || mount -t tracefs tracefs /sys/kernel/tracing",
+      "cd /opt/cross-node-ids && docker compose --env-file /opt/ids/.env --project-directory . -f deploy/compose.node.yml --profile agent pull",
+      "cd /opt/cross-node-ids && docker compose --env-file /opt/ids/.env --project-directory . -f deploy/compose.node.yml --profile agent up -d"
     ]
   })}"
 }
@@ -149,6 +150,11 @@ resource "digitalocean_firewall" "sensors" {
   inbound_rule {
     protocol           = "tcp"
     port_range         = "22"
+    source_droplet_ids = [for node in digitalocean_droplet.sensor : node.id]
+  }
+  inbound_rule {
+    protocol           = "tcp"
+    port_range         = "2222"
     source_droplet_ids = [for node in digitalocean_droplet.sensor : node.id]
   }
   outbound_rule {

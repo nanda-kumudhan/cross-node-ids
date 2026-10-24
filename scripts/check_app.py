@@ -39,7 +39,7 @@ def publish(topic, records):
 
 initial = await_snapshot(lambda data: data["mode"] == "live")
 assert initial["alerts"] == [] and initial["loss"] == []
-assert initial["detection_enabled"] is False
+assert initial["detection_enabled"] is True
 with urllib.request.urlopen(base_url + "/replay.json", timeout=3) as response:
     assert json.load(response)["mode"] == "replay"
 alert = {"id": "integration-1", "title": "Synthetic integration alert", "rule_id": "exec-from-tmp",
@@ -56,3 +56,33 @@ first_run = next(row for row in data["loss"] if row["agent_run_id"] == "run-1")
 assert first_run["received"] == 10, "A stale snapshot replaced a newer snapshot"
 assert first_run["sequence_gaps"] == 2 and first_run["kernel_drops"] == 1
 print("Kafka → Postgres → API → UI proxy integration passed; replay served; restart scopes preserved.")
+
+# Exercise the detector, not just direct alert ingestion.
+from pathlib import Path
+import datetime
+events = [json.loads(line) for line in Path('rules/fixtures/connection.jsonl').read_text().splitlines()]
+started = datetime.datetime.now(datetime.timezone.utc)
+for index, event in enumerate(events):
+    event['timestamp'] = (started + datetime.timedelta(milliseconds=20 * index)).isoformat()
+    event['synthetic'] = True
+
+
+def publish_events(records):
+    subprocess.run(compose + ['exec', '-T', 'kafka', '/opt/kafka/bin/kafka-console-producer.sh',
+        '--bootstrap-server', 'kafka:9092', '--topic', 'events.raw',
+        '--property', 'parse.key=true', '--property', 'key.separator=\t'],
+        input=''.join(event['node'] + '\t' + json.dumps(event) + '\n' for event in records),
+        text=True, check=True, timeout=30)
+
+
+publish_events(events)
+detected = await_snapshot(lambda value: any(row['rule_id'] == 'cross-node-connection' for row in value['alerts']))
+connection = next(row for row in detected['alerts'] if row['rule_id'] == 'cross-node-connection')
+assert connection['nodes'] == ['a', 'b'] and len(connection['evidence']) == 2
+subprocess.run(compose + ['restart', 'engine'], check=True, timeout=30)
+await_snapshot(lambda value: value['detection_enabled'])
+publish_events(events)
+restored = await_snapshot(lambda value: any(row['node'] == 'a' and row.get('revision', 0) >= 2 for row in value['loss']))
+assert sum(row['rule_id'] == 'cross-node-connection' for row in restored['alerts']) == 1
+assert next(row for row in restored['loss'] if row['node'] == 'a')['received'] == 1
+print('Raw fixture → Streams connection alert → dashboard passed; restored sequence state deduplicates replay.')

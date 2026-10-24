@@ -77,3 +77,12 @@ variable "ui_image" {
     error_message = "Pin the GHCR UI image by digest."
   }
 }
+
+variable "agent_image" {
+  type        = string
+  description = "Published Linux amd64 agent image pinned by sha256 digest."
+  validation {
+    condition     = can(regex("^ghcr\\.io/.+@sha256:[a-f0-9]{64}$", var.agent_image))
+    error_message = "Pin the GHCR agent image by digest."
+  }
+}

@@ -14,7 +14,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class RuleTests(unittest.TestCase):
     def test_repository_rules(self):
-        self.assertEqual(validate(ROOT / "rules", ROOT / "schemas/rule.schema.json"), 3)
+        self.assertEqual(validate(ROOT / "rules", ROOT / "schemas/rule.schema.json"), 4)
+
+    def test_connection_rule_rejects_unsupported_transport(self):
+        with tempfile.TemporaryDirectory() as directory:
+            rule = (ROOT / "rules/cross-node-connection.yml").read_text().replace("protocol: tcp", "protocol: udp")
+            (Path(directory) / "cross-node-connection.yml").write_text(rule)
+            with self.assertRaises(ValidationError):
+                validate(directory, ROOT / "schemas/rule.schema.json")
 
     def test_duplicate_yaml_keys_rejected(self):
         with self.assertRaisesRegex(ValueError, "Duplicate YAML key"):

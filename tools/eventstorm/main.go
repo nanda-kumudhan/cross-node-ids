@@ -42,9 +42,9 @@ func main() {
 	if *rate < 0 || *rate > 1000000 || *node == "" || *boot == "" || *run == "" || *count == 0 || *start == 0 {
 		fatal(fmt.Errorf("require nonempty identities, positive count/sequence, rate 0..1000000"))
 	}
-	const maxSequence = uint64(1<<63 - 1)
+	const maxSequence = uint64(1<<53 - 1)
 	if *start > maxSequence || *count-1 > maxSequence-*start {
-		fatal(fmt.Errorf("sequence range overflows the signed 64-bit event contract"))
+		fatal(fmt.Errorf("sequence range exceeds the safe integer event contract"))
 	}
 	if *mode != "json" && *mode != "exec" && *mode != "connect" {
 		fatal(fmt.Errorf("unknown mode %q", *mode))

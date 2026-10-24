@@ -57,10 +57,21 @@ class DashboardStore {
                 throw new IllegalArgumentException("Invalid counter: " + field);
             }
         }
+        for (String field : List.of("revision", "provisional_gaps", "finalized_gaps", "capture_errors", "late_unreconciled", "highest_seq")) {
+            if (loss.has(field) && (!loss.path(field).isIntegralNumber() || !loss.path(field).canConvertToLong()
+                    || loss.path(field).longValue() < 0 || loss.path(field).longValue() > 9007199254740991L))
+                throw new IllegalArgumentException("Invalid counter: " + field);
+        }
+        if (loss.has("closed") && !loss.path("closed").isBoolean()) throw new IllegalArgumentException("Invalid closed flag");
         jdbc.update("""
             INSERT INTO loss_snapshots (node, boot_id, agent_run_id, observed_at, payload) VALUES (?, ?, ?, ?, ?::jsonb)
             ON CONFLICT (node, boot_id, agent_run_id) DO UPDATE SET observed_at = EXCLUDED.observed_at,
-              payload = EXCLUDED.payload WHERE loss_snapshots.observed_at < EXCLUDED.observed_at
+              payload = EXCLUDED.payload WHERE CASE
+                WHEN (loss_snapshots.payload->>'revision') IS NOT NULL AND (EXCLUDED.payload->>'revision') IS NOT NULL
+                THEN (loss_snapshots.payload->>'revision')::bigint < (EXCLUDED.payload->>'revision')::bigint
+                WHEN (EXCLUDED.payload->>'revision') IS NOT NULL THEN true
+                WHEN (loss_snapshots.payload->>'revision') IS NOT NULL THEN false
+                ELSE loss_snapshots.observed_at < EXCLUDED.observed_at END
             """, node, boot, run, java.sql.Timestamp.from(at), json);
     }
 

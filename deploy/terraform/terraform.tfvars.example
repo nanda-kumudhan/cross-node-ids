@@ -6,4 +6,5 @@ repository_url       = "https://github.com/YOUR_ACCOUNT/cross-node-ids.git"
 revision             = "0000000000000000000000000000000000000000"
 engine_image         = "ghcr.io/YOUR_ACCOUNT/cross-node-ids-engine@sha256:REPLACE_WITH_DIGEST"
 ui_image             = "ghcr.io/YOUR_ACCOUNT/cross-node-ids-ui@sha256:REPLACE_WITH_DIGEST"
+agent_image          = "ghcr.io/YOUR_ACCOUNT/cross-node-ids-agent@sha256:REPLACE_WITH_DIGEST"
 sensor_count         = 2

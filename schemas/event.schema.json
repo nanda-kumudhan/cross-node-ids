@@ -8,7 +8,7 @@
     "node": {"type": "string", "minLength": 1},
     "boot_id": {"type": "string", "minLength": 1},
     "agent_run_id": {"type": "string", "minLength": 1},
-    "seq": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+    "seq": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
     "timestamp": {"type": "string", "format": "date-time"},
     "type": {"enum": ["exec", "connect", "accept", "ssh_session_authenticated", "heartbeat"]},
     "pid": {"type": "integer", "minimum": 0},
@@ -19,6 +19,23 @@
     "src_port": {"type": "integer", "minimum": 0, "maximum": 65535},
     "dst_ip": {"type": "string"},
     "dst_port": {"type": "integer", "minimum": 0, "maximum": 65535},
-    "kernel_drops": {"type": "integer", "minimum": 0}
-  }
+    "kernel_drops": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "capture_errors": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "protocol": {"const": "tcp"},
+    "address_family": {"const": "ipv4"},
+    "success": {"type": "boolean"},
+    "final": {"type": "boolean"},
+    "high_watermark": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "monotonic_ns": {"type": "integer", "minimum": 0},
+    "clock_uncertainty_ns": {"type": "integer", "minimum": 0},
+    "path_truncated": {"type": "boolean"}
+  },
+  "allOf": [
+    {"if": {"properties": {"type": {"enum": ["connect", "accept"]}}},
+     "then": {"required": ["protocol", "address_family", "success", "src_ip", "src_port", "dst_ip", "dst_port"],
+              "properties": {"src_ip": {"format": "ipv4"}, "dst_ip": {"format": "ipv4"},
+                             "src_port": {"minimum": 1}, "dst_port": {"minimum": 1}}}},
+    {"if": {"properties": {"type": {"const": "exec"}}}, "then": {"required": ["executable"], "properties": {"executable": {"minLength": 1}}}},
+    {"if": {"properties": {"type": {"const": "heartbeat"}}}, "then": {"required": ["high_watermark", "final"]}}
+  ]
 }

@@ -3,7 +3,7 @@ title: SSH onward hop followed by suspicious destination execution
 description: Match a successful connect and accept tuple, then execution in that destination session.
 kind: cross_node
 severity: critical
-enabled: true
+enabled: false
 attack: [T1021.004]
 spec:
   source_rule: ssh-onward-hop

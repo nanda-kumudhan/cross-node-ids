@@ -7,7 +7,15 @@ output=$(mktemp)
 trap 'rm -f -- "$output"' EXIT
 
 "${compose[@]}" exec -T postgres sh -ec 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c "SELECT 1"' >/dev/null
-printf '{"node":"docker-smoke","seq":0,"type":"smoke","smoke_id":"%s"}\n' "$smoke_id" >> deploy/logs/events.jsonl
+python3 - "$smoke_id" <<'PY'
+import datetime, json, sys
+marker = sys.argv[1]
+event = dict(schema_version=1, node='docker-smoke', boot_id='smoke-boot', agent_run_id=marker,
+             seq=1, timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(), type='heartbeat',
+             pid=0, process_start_ns=0, high_watermark=1, final=True, synthetic=True, smoke_id=marker)
+with open('deploy/logs/events.jsonl', 'a') as output:
+    output.write(json.dumps(event) + '\n')
+PY
 
 # The consumer can time out after reading the marker; matching it is the check.
 timeout 30s "${compose[@]}" exec -T kafka \

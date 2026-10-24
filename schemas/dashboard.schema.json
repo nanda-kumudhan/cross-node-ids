@@ -28,7 +28,10 @@
       "properties": {
         "node": {"$ref": "#/$defs/text"}, "boot_id": {"$ref": "#/$defs/text"}, "agent_run_id": {"$ref": "#/$defs/text"},
         "timestamp": {"type": "string", "format": "date-time"},
-        "received": {"$ref": "#/$defs/counter"}, "sequence_gaps": {"$ref": "#/$defs/counter"}, "kernel_drops": {"$ref": "#/$defs/counter"}
+        "received": {"$ref": "#/$defs/counter"}, "sequence_gaps": {"$ref": "#/$defs/counter"}, "kernel_drops": {"$ref": "#/$defs/counter"},
+        "revision": {"$ref": "#/$defs/counter"}, "provisional_gaps": {"$ref": "#/$defs/counter"},
+        "finalized_gaps": {"$ref": "#/$defs/counter"}, "capture_errors": {"$ref": "#/$defs/counter"},
+        "late_unreconciled": {"$ref": "#/$defs/counter"}, "highest_seq": {"$ref": "#/$defs/counter"}, "closed": {"type": "boolean"}
       }
     }
   }
